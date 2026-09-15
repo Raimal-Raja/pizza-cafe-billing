@@ -23,15 +23,41 @@ jobs:
         run: |
           yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Generate Gradle Wrapper
+      - name: Setup Gradle 8.6
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.6'
+
+      - name: Inject Repositories into root build.gradle
         run: |
-          gradle wrapper --gradle-version 8.6
-          chmod +x gradlew
+          # Creates or prepends proper repositories to root build.gradle
+          cat << 'EOF' > root_build.gradle.tmp
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.4.1'
+                  classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24'
+              }
+          }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          EOF
+          if [ -f build.gradle ]; then
+            cat build.gradle >> root_build.gradle.tmp
+          fi
+          mv root_build.gradle.tmp build.gradle
 
       - name: Build Debug APK
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
