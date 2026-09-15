@@ -76,3 +76,19 @@ project; the bill data and itemized layout are already separated out in
   not by flavor)
 - Table numbers are free-text, not a fixed floor plan — quick to use, no
   setup required
+
+## Git / push note
+If Git reports a README conflict or says the branch cannot be pushed, it is usually
+because the remote branch has changed since your last pull, or because a merge
+conflict is still open in `README.md`.
+
+To fix it:
+1. Pull the latest branch changes: `git pull --rebase origin <branch-name>`
+2. Resolve any conflict markers in `README.md` and keep the correct final text
+3. Stage the file: `git add README.md`
+4. Commit and push again: `git commit -m "Resolve README conflict"` and
+   `git push origin <branch-name>`
+
+If the issue is only that the README shows as modified but not pushed, make sure
+there are no unmerged conflict markers left and that you are pushing to the
+correct branch.
