@@ -54,6 +54,12 @@
                         android:gravity="center"
                         android:textStyle="bold"
                         android:textSize="18sp"
+                        android:maxLines="1"
+                        android:ellipsize="none"
+                        app:autoSizeTextType="uniform"
+                        app:autoSizeMinTextSize="10sp"
+                        app:autoSizeMaxTextSize="18sp"
+                        app:autoSizeStepGranularity="1sp"
                         android:textColor="@color/navy"/>
 
                     <TextView

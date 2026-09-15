@@ -60,7 +60,7 @@ class BillActivity : AppCompatActivity() {
             val order = repo.orderDao.getOrderById(orderId) ?: return@launch
             val items = repo.orderDao.getItemsForOrderSync(orderId)
 
-            binding.tvBillHeader.text = prefs.restaurantName.ifBlank { "Pizza Cafe" }
+            binding.tvBillHeader.text = "PIZZA CAFE: TASTE OF BADIN"
             binding.tvBillSub.text = "${prefs.restaurantAddress}\n${prefs.restaurantPhone}"
 
             val timeFormat = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
@@ -132,7 +132,7 @@ class BillActivity : AppCompatActivity() {
         return """
             <html><body style="font-family: monospace; width: 280px; background:#ffffff;">
             $logoTag
-            <h2 style="text-align:center;margin-bottom:0;">${prefs.restaurantName}</h2>
+            <h2 style="text-align:center;margin-bottom:0;font-size:15px;white-space:nowrap;overflow:hidden;letter-spacing:0.3px;">PIZZA CAFE: TASTE OF BADIN</h2>
             <p style="text-align:center;margin-top:4px;">${prefs.restaurantAddress}<br/>${prefs.restaurantPhone}</p>
             <hr/>
             <p>${metaText.replace("\n", "<br/>")}</p>
