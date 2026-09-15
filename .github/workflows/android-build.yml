@@ -19,7 +19,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Accept Android SDK Licenses
+      - name: Accept Android SDK licenses
         run: |
           yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
@@ -27,37 +27,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.6'
-
-      - name: Standardize Gradle Configuration
-        run: |
-          # Write a clean, modern root build.gradle
-          cat << 'EOF' > build.gradle
-          plugins {
-              id 'com.android.application' version '8.4.1' apply false
-              id 'org.jetbrains.kotlin.android' version '1.9.24' apply false
-              id 'org.jetbrains.kotlin.kapt' version '1.9.24' apply false
-          }
-          EOF
-
-          # Ensure settings.gradle has proper repository resolution
-          cat << 'EOF' > settings.gradle
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.name = "PizzaCafeBilling"
-          include ':app'
-          EOF
 
       - name: Build Debug APK
         env:

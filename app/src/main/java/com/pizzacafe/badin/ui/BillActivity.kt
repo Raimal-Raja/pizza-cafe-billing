@@ -1,9 +1,12 @@
 package com.pizzacafe.badin.ui
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.print.PrintAttributes
 import android.print.PrintManager
+import android.util.Base64
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -11,6 +14,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.pizzacafe.badin.R
 import com.pizzacafe.badin.data.OrderStatus
 import com.pizzacafe.badin.data.OrderType
 import com.pizzacafe.badin.data.Repository
@@ -18,6 +22,7 @@ import com.pizzacafe.badin.databinding.ActivityBillBinding
 import com.pizzacafe.badin.util.Currency
 import com.pizzacafe.badin.util.Prefs
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -95,9 +100,24 @@ class BillActivity : AppCompatActivity() {
         }
     }
 
+    private fun logoBase64(): String {
+        return try {
+            val bitmap: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.logo_pizza_cafe)
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
     private fun buildReceiptHtml(order: com.pizzacafe.badin.data.Order, itemsHtml: String, metaText: String): String {
+        val logoTag = logoBase64().let {
+            if (it.isBlank()) "" else "<div style='text-align:center;'><img src='data:image/png;base64,$it' style='width:90px;height:90px;object-fit:cover;'/></div>"
+        }
         return """
             <html><body style="font-family: monospace; width: 280px;">
+            $logoTag
             <h2 style="text-align:center;margin-bottom:0;">${prefs.restaurantName}</h2>
             <p style="text-align:center;margin-top:4px;">${prefs.restaurantAddress}<br/>${prefs.restaurantPhone}</p>
             <hr/>

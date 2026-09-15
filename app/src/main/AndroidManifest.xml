@@ -10,14 +10,16 @@
         android:theme="@style/Theme.PizzaCafe">
 
         <activity
-            android:name=".ui.MainActivity"
-            android:exported="true">
+            android:name=".ui.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.PizzaCafe">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
+        <activity android:name=".ui.MainActivity" android:exported="false" />
         <activity android:name=".ui.NewOrderActivity" android:exported="false" />
         <activity android:name=".ui.MenuManageActivity" android:exported="false" />
         <activity android:name=".ui.OrdersActivity" android:exported="false" />

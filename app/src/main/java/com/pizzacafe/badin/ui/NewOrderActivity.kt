@@ -254,6 +254,22 @@ class NewOrderActivity : AppCompatActivity() {
             Toast.makeText(this, "Enter a table number", Toast.LENGTH_SHORT).show()
             return
         }
+        if (orderType == OrderType.DELIVERY) {
+            when {
+                binding.etName.text.isNullOrBlank() -> {
+                    Toast.makeText(this, "Enter the customer's name", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                binding.etPhone.text.isNullOrBlank() -> {
+                    Toast.makeText(this, "Enter a contact number", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                binding.etAddress.text.isNullOrBlank() -> {
+                    Toast.makeText(this, "Enter the delivery address", Toast.LENGTH_SHORT).show()
+                    return
+                }
+            }
+        }
 
         val subtotal = currentSubtotal()
         val delivery = currentDeliveryCharge()
