@@ -19,16 +19,18 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Gradle & Generate Wrapper
+      - name: Accept Android SDK Licenses
         run: |
-          sudo apt-get update && sudo apt-get install -y gradle
+          yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: Generate Gradle Wrapper
+        run: |
           gradle wrapper --gradle-version 8.6
           chmod +x gradlew
 
       - name: Build Debug APK
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
