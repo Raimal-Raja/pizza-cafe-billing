@@ -65,7 +65,8 @@ class BillActivity : AppCompatActivity() {
 
             val timeFormat = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
             val meta = StringBuilder()
-            meta.append("Bill #${order.id}   ${timeFormat.format(Date(order.createdAt))}\n")
+            val invoiceLabel = if (order.invoiceNumber > 0) "Invoice #${order.invoiceNumber} (${order.orderDate})" else "Bill #${order.id}"
+            meta.append("$invoiceLabel   ${timeFormat.format(Date(order.createdAt))}\n")
             meta.append(
                 when (order.type) {
                     OrderType.DINE_IN -> "Dine-in — Table ${order.tableNumber ?: "-"}"
@@ -91,6 +92,13 @@ class BillActivity : AppCompatActivity() {
             binding.tvSubtotal.text = "Subtotal: ${Currency.format(order.subtotal)}"
             binding.tvDeliveryCharge.text = if (order.deliveryCharge > 0)
                 "Delivery: ${Currency.format(order.deliveryCharge)}" else "Delivery: Free"
+            if (order.discountAmount > 0) {
+                binding.tvDiscount.visibility = View.VISIBLE
+                val note = order.discountNote?.let { " ($it)" } ?: ""
+                binding.tvDiscount.text = "Discount$note: -${Currency.format(order.discountAmount)}"
+            } else {
+                binding.tvDiscount.visibility = View.GONE
+            }
             binding.tvGrandTotal.text = "Total: ${Currency.format(order.total)}"
 
             binding.btnComplete.visibility =
@@ -113,10 +121,16 @@ class BillActivity : AppCompatActivity() {
 
     private fun buildReceiptHtml(order: com.pizzacafe.badin.data.Order, itemsHtml: String, metaText: String): String {
         val logoTag = logoBase64().let {
-            if (it.isBlank()) "" else "<div style='text-align:center;'><img src='data:image/png;base64,$it' style='width:90px;height:90px;object-fit:cover;'/></div>"
+            // object-fit:contain (not cover) keeps the transparent logo un-cropped on the
+            // white bill background instead of zooming/cutting off its edges.
+            if (it.isBlank()) "" else "<div style='text-align:center;background:#ffffff;'><img src='data:image/png;base64,$it' style='width:100px;height:100px;object-fit:contain;'/></div>"
         }
+        val discountRow = if (order.discountAmount > 0) {
+            val note = order.discountNote?.let { " ($it)" } ?: ""
+            "<tr><td>Discount$note</td><td style=\"text-align:right;\">-${Currency.format(order.discountAmount)}</td></tr>"
+        } else ""
         return """
-            <html><body style="font-family: monospace; width: 280px;">
+            <html><body style="font-family: monospace; width: 280px; background:#ffffff;">
             $logoTag
             <h2 style="text-align:center;margin-bottom:0;">${prefs.restaurantName}</h2>
             <p style="text-align:center;margin-top:4px;">${prefs.restaurantAddress}<br/>${prefs.restaurantPhone}</p>
@@ -128,6 +142,7 @@ class BillActivity : AppCompatActivity() {
             <table style="width:100%;">
               <tr><td>Subtotal</td><td style="text-align:right;">${Currency.format(order.subtotal)}</td></tr>
               <tr><td>Delivery</td><td style="text-align:right;">${if (order.deliveryCharge > 0) Currency.format(order.deliveryCharge) else "Free"}</td></tr>
+              $discountRow
               <tr><td><b>Total</b></td><td style="text-align:right;"><b>${Currency.format(order.total)}</b></td></tr>
             </table>
             <p style="text-align:center;margin-top:12px;">Thank you for ordering!</p>

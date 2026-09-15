@@ -75,19 +75,23 @@
                 android:inputType="textPersonName"/>
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Always visible: phone is required for Dine-in, Delivery and Takeaway. Typing a
+             number that matches a previous customer auto-fills their saved details below. -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/layoutPhone"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Contact number"
-            android:visibility="gone">
+            android:hint="Contact number *"
+            app:helperText="Required — auto-fills saved customer details"
+            app:helperTextEnabled="true">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etPhone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="phone"/>
+                android:inputType="phone"
+                android:maxLength="15"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -119,6 +123,41 @@
                 android:layout_height="wrap_content"
                 android:inputType="none"/>
         </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Custom discount, applies to any order type -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:hint="Discount (Rs.)">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etDiscount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Discount reason (optional)">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etDiscountNote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
     </LinearLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -173,6 +212,16 @@
                 android:gravity="center_vertical"
                 android:text="Rs. 0"/>
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvDiscountApplied"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/gold_light"
+            android:textSize="12sp"
+            android:gravity="end"
+            android:visibility="gone"
+            android:text="Discount applied: Rs. 0"/>
 
         <LinearLayout
             android:layout_width="match_parent"

@@ -43,4 +43,51 @@ interface OrderDao {
 
     @Query("DELETE FROM order_items WHERE orderId = :orderId")
     suspend fun clearItemsForOrder(orderId: Long)
+
+    // ---- Day-wise records / invoice numbering ----
+
+    /** How many orders already exist for this day (used to compute the next invoice number). */
+    @Query("SELECT COUNT(*) FROM orders WHERE orderDate = :dateKey")
+    suspend fun countForDate(dateKey: String): Int
+
+    /** Distinct days that have at least one order, most recent first — powers the day picker. */
+    @Query("SELECT DISTINCT orderDate FROM orders WHERE orderDate != '' ORDER BY orderDate DESC")
+    suspend fun getAllOrderDates(): List<String>
+
+    @Query("SELECT * FROM orders WHERE orderDate = :dateKey ORDER BY invoiceNumber ASC, createdAt ASC")
+    fun getOrdersForDate(dateKey: String): LiveData<List<Order>>
+
+    /**
+     * Per-type breakdown for a day — Dining / Delivery / Takeaway — counted from billed or
+     * completed orders only (open/cancelled orders don't count toward sales records).
+     */
+    @Query(
+        """
+        SELECT type as type,
+               COUNT(*) as orderCount,
+               SUM(subtotal) as subtotal,
+               SUM(deliveryCharge) as deliveryTotal,
+               SUM(discountAmount) as discountTotal,
+               SUM(total) as grandTotal
+        FROM orders
+        WHERE orderDate = :dateKey AND status IN ('BILLED','COMPLETED')
+        GROUP BY type
+        """
+    )
+    suspend fun getDailySummaryByType(dateKey: String): List<OrderTypeSummary>
+
+    /** Sum of all order types for a day — Delivery + Takeaway + Dining combined. */
+    @Query(
+        """
+        SELECT NULL as type,
+               COUNT(*) as orderCount,
+               SUM(subtotal) as subtotal,
+               SUM(deliveryCharge) as deliveryTotal,
+               SUM(discountAmount) as discountTotal,
+               SUM(total) as grandTotal
+        FROM orders
+        WHERE orderDate = :dateKey AND status IN ('BILLED','COMPLETED')
+        """
+    )
+    suspend fun getDailySummaryTotal(dateKey: String): OrderTypeSummary?
 }

@@ -3,6 +3,8 @@ package com.pizzacafe.badin.ui
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.ArrayAdapter
@@ -17,6 +19,7 @@ import com.pizzacafe.badin.databinding.DialogCartBinding
 import com.pizzacafe.badin.ui.adapters.CartAdapter
 import com.pizzacafe.badin.ui.adapters.MenuAdapter
 import com.pizzacafe.badin.util.Currency
+import com.pizzacafe.badin.util.DateUtil
 import com.pizzacafe.badin.util.Prefs
 import kotlinx.coroutines.launch
 
@@ -24,6 +27,7 @@ class NewOrderActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_ORDER_ID = "order_id"
+        private const val PHONE_LOOKUP_MIN_LEN = 7
     }
 
     private lateinit var binding: ActivityNewOrderBinding
@@ -32,6 +36,7 @@ class NewOrderActivity : AppCompatActivity() {
 
     private var orderType: String = OrderType.DINE_IN
     private var existingOrderId: Long? = null
+    private var existingOrder: Order? = null
     private var allMenuItems: List<MenuItem> = emptyList()
     private var allFlavors: List<FlavorOption> = emptyList()
     private var allZones: List<DeliveryZone> = emptyList()
@@ -41,6 +46,10 @@ class NewOrderActivity : AppCompatActivity() {
 
     private lateinit var menuAdapter: MenuAdapter
     private var cartAdapter: CartAdapter? = null
+
+    // avoids re-triggering a lookup for the same number, and avoids overwriting fields the
+    // user is actively editing for an order that was loaded from an existing customer already
+    private var lastLookedUpPhone: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,6 +67,8 @@ class NewOrderActivity : AppCompatActivity() {
         setupCategoryFilter()
         setupZoneObserver()
         setupFlavorObserver()
+        setupPhoneAutoFill()
+        setupDiscountWatcher()
 
         binding.btnViewCart.setOnClickListener { showCartSheet() }
         binding.btnSave.setOnClickListener { persistOrder(OrderStatus.OPEN, thenOpenBill = false) }
@@ -141,9 +152,9 @@ class NewOrderActivity : AppCompatActivity() {
 
     private fun updateFieldVisibility() {
         binding.layoutTable.visibility = if (orderType == OrderType.DINE_IN) View.VISIBLE else View.GONE
-        val showCustomer = orderType != OrderType.DINE_IN
-        binding.layoutName.visibility = if (showCustomer) View.VISIBLE else View.GONE
-        binding.layoutPhone.visibility = if (showCustomer) View.VISIBLE else View.GONE
+        // Phone is always visible/required (Dine-in, Delivery, Takeaway).
+        val showCustomerName = orderType != OrderType.DINE_IN
+        binding.layoutName.visibility = if (showCustomerName) View.VISIBLE else View.GONE
         binding.layoutAddress.visibility = if (orderType == OrderType.DELIVERY) View.VISIBLE else View.GONE
         binding.layoutZone.visibility = if (orderType == OrderType.DELIVERY) View.VISIBLE else View.GONE
         supportActionBar?.title = when (orderType) {
@@ -152,6 +163,52 @@ class NewOrderActivity : AppCompatActivity() {
             else -> "New Order — Takeaway"
         }
         updateCartFooter()
+    }
+
+    /** Auto-fills name / address / delivery zone for a returning customer once their phone
+     *  number is recognized, so staff don't have to re-type it every time. */
+    private fun setupPhoneAutoFill() {
+        binding.etPhone.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                val phone = s?.toString()?.trim().orEmpty()
+                if (phone.length < PHONE_LOOKUP_MIN_LEN || phone == lastLookedUpPhone) return
+                lastLookedUpPhone = phone
+                lookupCustomer(phone)
+            }
+        })
+    }
+
+    private fun lookupCustomer(phone: String) {
+        lifecycleScope.launch {
+            val customer = repo.customerDao.getByPhone(phone) ?: return@launch
+            // Don't clobber text the user already typed for this order.
+            if (binding.etName.text.isNullOrBlank() && !customer.name.isNullOrBlank()) {
+                binding.etName.setText(customer.name)
+            }
+            if (orderType == OrderType.DELIVERY && binding.etAddress.text.isNullOrBlank() && !customer.address.isNullOrBlank()) {
+                binding.etAddress.setText(customer.address)
+            }
+            if (orderType == OrderType.DELIVERY && customer.deliveryZoneId != null) {
+                val zone = allZones.find { it.id == customer.deliveryZoneId }
+                if (zone != null) {
+                    selectedZone = zone
+                    val label = "${zone.name} (${if (zone.charge <= 0) "Free" else Currency.format(zone.charge)})"
+                    binding.spZone.setText(label, false)
+                    updateCartFooter()
+                }
+            }
+            Toast.makeText(this@NewOrderActivity, "Loaded saved customer details", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun setupDiscountWatcher() {
+        binding.etDiscount.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) = updateCartFooter()
+        })
     }
 
     private fun onMenuItemTapped(item: MenuItem) {
@@ -209,17 +266,30 @@ class NewOrderActivity : AppCompatActivity() {
         return selectedZone?.charge ?: 0.0
     }
 
+    private fun currentDiscount(): Double {
+        val raw = binding.etDiscount.text?.toString()?.toDoubleOrNull() ?: 0.0
+        return raw.coerceAtLeast(0.0)
+    }
+
     private fun updateCartFooter() {
         val count = cart.sumOf { it.qty }
         val subtotal = currentSubtotal()
         val delivery = currentDeliveryCharge()
+        val discount = currentDiscount().coerceAtMost(subtotal + delivery)
         binding.tvCartSummary.text = "Cart: $count item${if (count == 1) "" else "s"}"
-        binding.tvCartTotal.text = Currency.format(subtotal + delivery)
+        binding.tvCartTotal.text = Currency.format(subtotal + delivery - discount)
+        if (discount > 0) {
+            binding.tvDiscountApplied.visibility = View.VISIBLE
+            binding.tvDiscountApplied.text = "Discount applied: ${Currency.format(discount)}"
+        } else {
+            binding.tvDiscountApplied.visibility = View.GONE
+        }
     }
 
     private fun loadExistingOrder(orderId: Long) {
         lifecycleScope.launch {
             val order = repo.orderDao.getOrderById(orderId) ?: return@launch
+            existingOrder = order
             val items = repo.orderDao.getItemsForOrderSync(orderId)
 
             orderType = order.type
@@ -233,8 +303,14 @@ class NewOrderActivity : AppCompatActivity() {
 
             binding.etTable.setText(order.tableNumber ?: "")
             binding.etName.setText(order.customerName ?: "")
+            // Pre-fill phone without triggering an auto-fill lookup that could overwrite it.
+            lastLookedUpPhone = order.phone
             binding.etPhone.setText(order.phone ?: "")
             binding.etAddress.setText(order.address ?: "")
+            if (order.discountAmount > 0) {
+                binding.etDiscount.setText(Currency.plain(order.discountAmount))
+            }
+            binding.etDiscountNote.setText(order.discountNote ?: "")
 
             cart.clear()
             items.forEach { oi ->
@@ -254,14 +330,15 @@ class NewOrderActivity : AppCompatActivity() {
             Toast.makeText(this, "Enter a table number", Toast.LENGTH_SHORT).show()
             return
         }
+        // Contact number is required for every order type: Dine-in, Delivery and Takeaway.
+        if (binding.etPhone.text.isNullOrBlank()) {
+            Toast.makeText(this, "Enter a contact number", Toast.LENGTH_SHORT).show()
+            return
+        }
         if (orderType == OrderType.DELIVERY) {
             when {
                 binding.etName.text.isNullOrBlank() -> {
                     Toast.makeText(this, "Enter the customer's name", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                binding.etPhone.text.isNullOrBlank() -> {
-                    Toast.makeText(this, "Enter a contact number", Toast.LENGTH_SHORT).show()
                     return
                 }
                 binding.etAddress.text.isNullOrBlank() -> {
@@ -273,39 +350,58 @@ class NewOrderActivity : AppCompatActivity() {
 
         val subtotal = currentSubtotal()
         val delivery = currentDeliveryCharge()
+        val discount = currentDiscount().coerceAtMost(subtotal + delivery)
+        val discountNote = binding.etDiscountNote.text?.toString()?.trim().takeUnless { it.isNullOrBlank() }
+        val phone = binding.etPhone.text?.toString()?.trim()
+        val name = binding.etName.text?.toString()?.trim()
+        val address = binding.etAddress.text?.toString()?.trim()
 
         lifecycleScope.launch {
             val orderId: Long
             if (existingOrderId != null) {
                 val existing = repo.orderDao.getOrderById(existingOrderId!!)!!
+                // Day/invoice number are assigned once, at creation, and kept stable on edits.
+                val dateKey = existing.orderDate.ifBlank { DateUtil.dateKey(existing.createdAt) }
+                val invoiceNumber = if (existing.invoiceNumber > 0) existing.invoiceNumber
+                    else repo.orderDao.countForDate(dateKey) + 1
                 val updated = existing.copy(
                     type = orderType,
                     tableNumber = binding.etTable.text?.toString(),
-                    customerName = binding.etName.text?.toString(),
-                    phone = binding.etPhone.text?.toString(),
-                    address = binding.etAddress.text?.toString(),
+                    customerName = name,
+                    phone = phone,
+                    address = address,
                     deliveryZoneId = selectedZone?.id,
                     deliveryCharge = delivery,
                     subtotal = subtotal,
-                    total = subtotal + delivery,
+                    discountAmount = discount,
+                    discountNote = discountNote,
+                    total = subtotal + delivery - discount,
                     status = status,
+                    orderDate = dateKey,
+                    invoiceNumber = invoiceNumber,
                     updatedAt = System.currentTimeMillis()
                 )
                 repo.orderDao.updateOrder(updated)
                 repo.orderDao.clearItemsForOrder(existingOrderId!!)
                 orderId = existingOrderId!!
             } else {
+                val dateKey = DateUtil.todayKey()
+                val invoiceNumber = repo.orderDao.countForDate(dateKey) + 1
                 val newOrder = Order(
                     type = orderType,
                     tableNumber = binding.etTable.text?.toString(),
-                    customerName = binding.etName.text?.toString(),
-                    phone = binding.etPhone.text?.toString(),
-                    address = binding.etAddress.text?.toString(),
+                    customerName = name,
+                    phone = phone,
+                    address = address,
                     deliveryZoneId = selectedZone?.id,
                     deliveryCharge = delivery,
                     subtotal = subtotal,
-                    total = subtotal + delivery,
-                    status = status
+                    discountAmount = discount,
+                    discountNote = discountNote,
+                    total = subtotal + delivery - discount,
+                    status = status,
+                    orderDate = dateKey,
+                    invoiceNumber = invoiceNumber
                 )
                 orderId = repo.orderDao.insertOrder(newOrder)
             }
@@ -320,6 +416,20 @@ class NewOrderActivity : AppCompatActivity() {
                         qty = line.qty,
                         flavorNote = line.flavorNote,
                         lineTotal = line.lineTotal
+                    )
+                )
+            }
+
+            // Remember this customer (by phone) so their next order auto-fills — this is
+            // written to the on-device Room/SQLite database, i.e. persisted local storage.
+            if (!phone.isNullOrBlank()) {
+                repo.customerDao.upsert(
+                    Customer(
+                        phone = phone,
+                        name = name,
+                        address = address,
+                        deliveryZoneId = selectedZone?.id,
+                        lastOrderType = orderType
                     )
                 )
             }

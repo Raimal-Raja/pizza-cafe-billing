@@ -33,6 +33,9 @@ class MainActivity : AppCompatActivity() {
         binding.cardMenu.setOnClickListener {
             startActivity(Intent(this, MenuManageActivity::class.java))
         }
+        binding.cardDailySummary.setOnClickListener {
+            startActivity(Intent(this, DailySummaryActivity::class.java))
+        }
         binding.cardSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }

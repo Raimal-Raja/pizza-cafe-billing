@@ -22,13 +22,27 @@ data class Order(
     val type: String,                  // OrderType
     var tableNumber: String? = null,   // for DINE_IN
     var customerName: String? = null,
-    var phone: String? = null,
+    var phone: String? = null,         // required for DINE_IN, DELIVERY and TAKEAWAY
     var address: String? = null,
     var deliveryZoneId: Long? = null,
     var deliveryCharge: Double = 0.0,
     var subtotal: Double = 0.0,
-    var total: Double = 0.0,
+    var discountAmount: Double = 0.0,  // custom discount applied to this order
+    var discountNote: String? = null,  // optional reason/label for the discount
+    var total: Double = 0.0,           // subtotal + deliveryCharge - discountAmount
     var status: String = OrderStatus.OPEN,
+    var orderDate: String = "",        // yyyy-MM-dd "day key" this order is recorded under
+    var invoiceNumber: Int = 0,        // resets to 1 at the start of each day
     val createdAt: Long = System.currentTimeMillis(),
     var updatedAt: Long = System.currentTimeMillis()
+)
+
+/** Aggregated totals for one order type (or the overall day when [type] is null). */
+data class OrderTypeSummary(
+    val type: String?,
+    val orderCount: Int,
+    val subtotal: Double,
+    val deliveryTotal: Double,
+    val discountTotal: Double,
+    val grandTotal: Double
 )

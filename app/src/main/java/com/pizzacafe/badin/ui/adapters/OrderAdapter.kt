@@ -40,7 +40,8 @@ class OrderAdapter(
                 OrderType.DELIVERY -> "Delivery — ${order.customerName ?: "Customer"}"
                 else -> "Takeaway — ${order.customerName ?: "Walk-in"}"
             }
-            binding.tvOrderTitle.text = "#${order.id}  $typeLabel"
+            val invoiceLabel = if (order.invoiceNumber > 0) "Inv#${order.invoiceNumber}" else "#${order.id}"
+            binding.tvOrderTitle.text = "$invoiceLabel  $typeLabel"
             binding.tvOrderSub.text = timeFormat.format(Date(order.createdAt))
             binding.tvOrderTotal.text = Currency.format(order.total)
             binding.tvOrderStatus.text = order.status

@@ -9,4 +9,10 @@ object Currency {
         val formatted = NumberFormat.getNumberInstance(Locale.US).format(whole)
         return "Rs. $formatted"
     }
+
+    /** Plain numeric string (no currency symbol/grouping) — for pre-filling edit fields. */
+    fun plain(amount: Double): String {
+        val whole = Math.round(amount)
+        return whole.toString()
+    }
 }

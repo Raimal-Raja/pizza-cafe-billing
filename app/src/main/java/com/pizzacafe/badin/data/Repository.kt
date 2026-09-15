@@ -8,4 +8,5 @@ class Repository(context: Context) {
     val menuDao = db.menuDao()
     val zoneDao = db.deliveryZoneDao()
     val orderDao = db.orderDao()
+    val customerDao = db.customerDao()
 }

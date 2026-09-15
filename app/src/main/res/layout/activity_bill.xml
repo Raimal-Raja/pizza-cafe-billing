@@ -44,7 +44,7 @@
                         android:layout_gravity="center_horizontal"
                         android:layout_marginBottom="6dp"
                         android:src="@drawable/logo_pizza_cafe"
-                        android:scaleType="centerCrop"
+                        android:scaleType="centerInside"
                         android:contentDescription="Pizza Cafe logo"/>
 
                     <TextView
@@ -106,6 +106,15 @@
                         android:layout_height="wrap_content"
                         android:textSize="14sp"
                         android:gravity="end"/>
+
+                    <TextView
+                        android:id="@+id/tvDiscount"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp"
+                        android:textColor="@color/cafe_green"
+                        android:gravity="end"
+                        android:visibility="gone"/>
 
                     <TextView
                         android:id="@+id/tvGrandTotal"
