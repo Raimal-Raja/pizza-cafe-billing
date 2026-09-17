@@ -90,4 +90,8 @@ interface OrderDao {
         """
     )
     suspend fun getDailySummaryTotal(dateKey: String): OrderTypeSummary?
+
+    /** Cancelled ("deleted") orders for a day — kept for audit, with the reason recorded. */
+    @Query("SELECT * FROM orders WHERE orderDate = :dateKey AND status = 'CANCELLED' ORDER BY deletedAt DESC")
+    suspend fun getCancelledForDate(dateKey: String): List<Order>
 }

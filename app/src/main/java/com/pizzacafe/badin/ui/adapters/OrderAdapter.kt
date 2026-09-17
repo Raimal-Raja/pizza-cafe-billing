@@ -8,16 +8,13 @@ import com.pizzacafe.badin.data.OrderStatus
 import com.pizzacafe.badin.data.OrderType
 import com.pizzacafe.badin.databinding.ItemOrderBinding
 import com.pizzacafe.badin.util.Currency
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.pizzacafe.badin.util.DateUtil
 
 class OrderAdapter(
     private val onClick: (Order) -> Unit
 ) : RecyclerView.Adapter<OrderAdapter.VH>() {
 
     private var orders: List<Order> = emptyList()
-    private val timeFormat = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
 
     fun submit(newOrders: List<Order>) {
         orders = newOrders
@@ -42,7 +39,11 @@ class OrderAdapter(
             }
             val invoiceLabel = if (order.invoiceNumber > 0) "Inv#${order.invoiceNumber}" else "#${order.id}"
             binding.tvOrderTitle.text = "$invoiceLabel  $typeLabel"
-            binding.tvOrderSub.text = timeFormat.format(Date(order.createdAt))
+            binding.tvOrderSub.text = if (order.status == OrderStatus.CANCELLED) {
+                "Cancelled: ${order.deleteReason ?: "No reason"}"
+            } else {
+                DateUtil.displayTime(order.createdAt)
+            }
             binding.tvOrderTotal.text = Currency.format(order.total)
             binding.tvOrderStatus.text = order.status
             binding.tvOrderStatus.setBackgroundColor(
@@ -57,3 +58,4 @@ class OrderAdapter(
         }
     }
 }
+

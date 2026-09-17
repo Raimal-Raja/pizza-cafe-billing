@@ -40,7 +40,11 @@ class NewOrderActivity : AppCompatActivity() {
     private var allMenuItems: List<MenuItem> = emptyList()
     private var allFlavors: List<FlavorOption> = emptyList()
     private var allZones: List<DeliveryZone> = emptyList()
+    private var allRiders: List<Rider> = emptyList()
+    private var allWaiters: List<Waiter> = emptyList()
     private var selectedZone: DeliveryZone? = null
+    private var selectedRider: Rider? = null
+    private var selectedWaiter: Waiter? = null
 
     private val cart = mutableListOf<CartLine>()
 
@@ -50,6 +54,13 @@ class NewOrderActivity : AppCompatActivity() {
     // avoids re-triggering a lookup for the same number, and avoids overwriting fields the
     // user is actively editing for an order that was loaded from an existing customer already
     private var lastLookedUpPhone: String? = null
+
+    // Delivery charge: auto-computed from the zone + free-delivery threshold by default, but
+    // once staff types directly into the charge field it becomes a manual override and the
+    // auto/threshold logic no longer touches it (this is the fix for "manual charges are not
+    // being applied" — previously there was no way to override the auto-computed charge).
+    private var deliveryChargeManuallyEdited = false
+    private var settingDeliveryChargeProgrammatically = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,8 +77,11 @@ class NewOrderActivity : AppCompatActivity() {
         setupTabs()
         setupCategoryFilter()
         setupZoneObserver()
+        setupRiderObserver()
+        setupWaiterObserver()
         setupFlavorObserver()
         setupPhoneAutoFill()
+        setupDeliveryChargeWatcher()
         setupDiscountWatcher()
 
         binding.btnViewCart.setOnClickListener { showCartSheet() }
@@ -121,11 +135,41 @@ class NewOrderActivity : AppCompatActivity() {
             binding.spZone.setAdapter(adapter)
             binding.spZone.setOnItemClickListener { _, _, position, _ ->
                 selectedZone = zones[position]
+                // Picking a zone resets any earlier manual override so the new zone's
+                // charge takes effect (staff can still re-type a manual value afterwards).
+                deliveryChargeManuallyEdited = false
                 updateCartFooter()
             }
             if (selectedZone == null && zones.isNotEmpty()) {
                 selectedZone = zones[0]
                 binding.spZone.setText(names[0], false)
+            }
+        }
+    }
+
+    private fun setupRiderObserver() {
+        repo.riderDao.getActiveRiders().observe(this) { riders ->
+            allRiders = riders
+            val names = riders.map { it.name }
+            val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, names)
+            binding.spRider.setAdapter(adapter)
+            binding.spRider.setOnItemClickListener { _, _, position, _ -> selectedRider = riders[position] }
+            // Re-select the previously chosen rider if the list refreshes (e.g. after edit)
+            selectedRider?.let { current ->
+                riders.find { it.id == current.id }?.let { selectedRider = it }
+            }
+        }
+    }
+
+    private fun setupWaiterObserver() {
+        repo.waiterDao.getActiveWaiters().observe(this) { waiters ->
+            allWaiters = waiters
+            val names = waiters.map { it.name }
+            val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, names)
+            binding.spWaiter.setAdapter(adapter)
+            binding.spWaiter.setOnItemClickListener { _, _, position, _ -> selectedWaiter = waiters[position] }
+            selectedWaiter?.let { current ->
+                waiters.find { it.id == current.id }?.let { selectedWaiter = it }
             }
         }
     }
@@ -155,8 +199,13 @@ class NewOrderActivity : AppCompatActivity() {
         // Phone is always visible/required (Dine-in, Delivery, Takeaway).
         val showCustomerName = orderType != OrderType.DINE_IN
         binding.layoutName.visibility = if (showCustomerName) View.VISIBLE else View.GONE
-        binding.layoutAddress.visibility = if (orderType == OrderType.DELIVERY) View.VISIBLE else View.GONE
-        binding.layoutZone.visibility = if (orderType == OrderType.DELIVERY) View.VISIBLE else View.GONE
+        val isDelivery = orderType == OrderType.DELIVERY
+        binding.layoutAddress.visibility = if (isDelivery) View.VISIBLE else View.GONE
+        binding.layoutZone.visibility = if (isDelivery) View.VISIBLE else View.GONE
+        binding.layoutDeliveryChargeManual.visibility = if (isDelivery) View.VISIBLE else View.GONE
+        binding.layoutRider.visibility = if (isDelivery) View.VISIBLE else View.GONE
+        // Waiters serve dine-in tables and takeaway counter orders.
+        binding.layoutWaiter.visibility = if (orderType != OrderType.DELIVERY) View.VISIBLE else View.GONE
         supportActionBar?.title = when (orderType) {
             OrderType.DINE_IN -> "New Order — Dine-in"
             OrderType.DELIVERY -> "New Order — Delivery"
@@ -201,6 +250,20 @@ class NewOrderActivity : AppCompatActivity() {
             }
             Toast.makeText(this@NewOrderActivity, "Loaded saved customer details", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    /** Keeps the manual delivery-charge field in sync with zone/threshold changes — unless
+     *  the user has typed into it directly, in which case their value always wins. */
+    private fun setupDeliveryChargeWatcher() {
+        binding.etDeliveryCharge.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (settingDeliveryChargeProgrammatically) return
+                deliveryChargeManuallyEdited = true
+                updateCartFooter()
+            }
+        })
     }
 
     private fun setupDiscountWatcher() {
@@ -259,11 +322,22 @@ class NewOrderActivity : AppCompatActivity() {
 
     private fun currentSubtotal(): Double = cart.sumOf { it.lineTotal }
 
-    private fun currentDeliveryCharge(): Double {
+    /** Auto-computed delivery charge from the selected zone, honoring the free-delivery
+     *  threshold — used only while the charge field hasn't been manually overridden. */
+    private fun autoDeliveryCharge(): Double {
         if (orderType != OrderType.DELIVERY) return 0.0
         val subtotal = currentSubtotal()
         if (subtotal >= prefs.freeDeliveryThreshold) return 0.0
         return selectedZone?.charge ?: 0.0
+    }
+
+    private fun currentDeliveryCharge(): Double {
+        if (orderType != OrderType.DELIVERY) return 0.0
+        return if (deliveryChargeManuallyEdited) {
+            binding.etDeliveryCharge.text?.toString()?.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0
+        } else {
+            autoDeliveryCharge()
+        }
     }
 
     private fun currentDiscount(): Double {
@@ -275,6 +349,15 @@ class NewOrderActivity : AppCompatActivity() {
         val count = cart.sumOf { it.qty }
         val subtotal = currentSubtotal()
         val delivery = currentDeliveryCharge()
+
+        // Reflect the auto-computed charge in the field as long as it hasn't been
+        // hand-edited, so staff can see what it will be before choosing to override it.
+        if (orderType == OrderType.DELIVERY && !deliveryChargeManuallyEdited) {
+            settingDeliveryChargeProgrammatically = true
+            binding.etDeliveryCharge.setText(Currency.plain(autoDeliveryCharge()))
+            settingDeliveryChargeProgrammatically = false
+        }
+
         val discount = currentDiscount().coerceAtMost(subtotal + delivery)
         binding.tvCartSummary.text = "Cart: $count item${if (count == 1) "" else "s"}"
         binding.tvCartTotal.text = Currency.format(subtotal + delivery - discount)
@@ -311,6 +394,18 @@ class NewOrderActivity : AppCompatActivity() {
                 binding.etDiscount.setText(Currency.plain(order.discountAmount))
             }
             binding.etDiscountNote.setText(order.discountNote ?: "")
+
+            if (order.type == OrderType.DELIVERY) {
+                deliveryChargeManuallyEdited = order.deliveryChargeManual
+                settingDeliveryChargeProgrammatically = true
+                binding.etDeliveryCharge.setText(Currency.plain(order.deliveryCharge))
+                settingDeliveryChargeProgrammatically = false
+            }
+
+            order.riderId?.let { rid -> selectedRider = allRiders.find { it.id == rid } ?: Rider(id = rid, name = order.riderName ?: "") }
+            order.riderName?.let { binding.spRider.setText(it, false) }
+            order.waiterId?.let { wid -> selectedWaiter = allWaiters.find { it.id == wid } ?: Waiter(id = wid, name = order.waiterName ?: "") }
+            order.waiterName?.let { binding.spWaiter.setText(it, false) }
 
             cart.clear()
             items.forEach { oi ->
@@ -355,13 +450,17 @@ class NewOrderActivity : AppCompatActivity() {
         val phone = binding.etPhone.text?.toString()?.trim()
         val name = binding.etName.text?.toString()?.trim()
         val address = binding.etAddress.text?.toString()?.trim()
+        val riderId = if (orderType == OrderType.DELIVERY) selectedRider?.id else null
+        val riderName = if (orderType == OrderType.DELIVERY) selectedRider?.name else null
+        val waiterId = if (orderType != OrderType.DELIVERY) selectedWaiter?.id else null
+        val waiterName = if (orderType != OrderType.DELIVERY) selectedWaiter?.name else null
 
         lifecycleScope.launch {
             val orderId: Long
             if (existingOrderId != null) {
                 val existing = repo.orderDao.getOrderById(existingOrderId!!)!!
                 // Day/invoice number are assigned once, at creation, and kept stable on edits.
-                val dateKey = existing.orderDate.ifBlank { DateUtil.dateKey(existing.createdAt) }
+                val dateKey = existing.orderDate.ifBlank { DateUtil.businessDateKey(existing.createdAt) }
                 val invoiceNumber = if (existing.invoiceNumber > 0) existing.invoiceNumber
                     else repo.orderDao.countForDate(dateKey) + 1
                 val updated = existing.copy(
@@ -372,6 +471,7 @@ class NewOrderActivity : AppCompatActivity() {
                     address = address,
                     deliveryZoneId = selectedZone?.id,
                     deliveryCharge = delivery,
+                    deliveryChargeManual = deliveryChargeManuallyEdited,
                     subtotal = subtotal,
                     discountAmount = discount,
                     discountNote = discountNote,
@@ -379,13 +479,17 @@ class NewOrderActivity : AppCompatActivity() {
                     status = status,
                     orderDate = dateKey,
                     invoiceNumber = invoiceNumber,
+                    riderId = riderId,
+                    riderName = riderName,
+                    waiterId = waiterId,
+                    waiterName = waiterName,
                     updatedAt = System.currentTimeMillis()
                 )
                 repo.orderDao.updateOrder(updated)
                 repo.orderDao.clearItemsForOrder(existingOrderId!!)
                 orderId = existingOrderId!!
             } else {
-                val dateKey = DateUtil.todayKey()
+                val dateKey = DateUtil.businessToday()
                 val invoiceNumber = repo.orderDao.countForDate(dateKey) + 1
                 val newOrder = Order(
                     type = orderType,
@@ -395,13 +499,18 @@ class NewOrderActivity : AppCompatActivity() {
                     address = address,
                     deliveryZoneId = selectedZone?.id,
                     deliveryCharge = delivery,
+                    deliveryChargeManual = deliveryChargeManuallyEdited,
                     subtotal = subtotal,
                     discountAmount = discount,
                     discountNote = discountNote,
                     total = subtotal + delivery - discount,
                     status = status,
                     orderDate = dateKey,
-                    invoiceNumber = invoiceNumber
+                    invoiceNumber = invoiceNumber,
+                    riderId = riderId,
+                    riderName = riderName,
+                    waiterId = waiterId,
+                    waiterName = waiterName
                 )
                 orderId = repo.orderDao.insertOrder(newOrder)
             }

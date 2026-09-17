@@ -170,7 +170,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Daily Sales Record"
+                        android:text="Daily Final Report"
                         android:textColor="@color/text_dark"
                         android:textSize="18sp"
                         android:textStyle="bold"/>
@@ -178,7 +178,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Dining, Delivery &amp; Takeaway totals, day by day"
+                        android:text="Sales, riders, expenses &amp; cancelled orders — day by day"
                         android:textColor="@color/text_muted"
                         android:textSize="13sp"
                         android:layout_marginTop="2dp"/>

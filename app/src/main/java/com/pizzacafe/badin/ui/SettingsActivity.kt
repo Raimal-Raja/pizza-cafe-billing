@@ -9,8 +9,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.pizzacafe.badin.data.DeliveryZone
 import com.pizzacafe.badin.data.Repository
+import com.pizzacafe.badin.data.Rider
+import com.pizzacafe.badin.data.Waiter
 import com.pizzacafe.badin.databinding.ActivitySettingsBinding
 import com.pizzacafe.badin.databinding.DialogDeliveryZoneBinding
+import com.pizzacafe.badin.databinding.DialogStaffBinding
+import com.pizzacafe.badin.ui.adapters.RiderAdapter
+import com.pizzacafe.badin.ui.adapters.WaiterAdapter
 import com.pizzacafe.badin.ui.adapters.ZoneAdapter
 import com.pizzacafe.badin.util.Prefs
 import kotlinx.coroutines.launch
@@ -45,6 +50,12 @@ class SettingsActivity : AppCompatActivity() {
             Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
         }
 
+        setupZones()
+        setupRiders()
+        setupWaiters()
+    }
+
+    private fun setupZones() {
         val zoneAdapter = ZoneAdapter { zone ->
             lifecycleScope.launch { repo.zoneDao.delete(zone) }
         }
@@ -68,6 +79,54 @@ class SettingsActivity : AppCompatActivity() {
                     return@setPositiveButton
                 }
                 lifecycleScope.launch { repo.zoneDao.insert(DeliveryZone(name = name, charge = charge)) }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    // ---- Riders ----
+
+    private fun setupRiders() {
+        val riderAdapter = RiderAdapter { rider, active ->
+            lifecycleScope.launch { repo.riderDao.update(rider.copy(active = active)) }
+        }
+        binding.rvRiders.adapter = riderAdapter
+        binding.rvRiders.layoutManager = LinearLayoutManager(this)
+        repo.riderDao.getAllRiders().observe(this) { riders -> riderAdapter.submit(riders) }
+
+        binding.btnAddRider.setOnClickListener { showAddStaffDialog(isRider = true) }
+    }
+
+    // ---- Waiters ----
+
+    private fun setupWaiters() {
+        val waiterAdapter = WaiterAdapter { waiter, active ->
+            lifecycleScope.launch { repo.waiterDao.update(waiter.copy(active = active)) }
+        }
+        binding.rvWaiters.adapter = waiterAdapter
+        binding.rvWaiters.layoutManager = LinearLayoutManager(this)
+        repo.waiterDao.getAllWaiters().observe(this) { waiters -> waiterAdapter.submit(waiters) }
+
+        binding.btnAddWaiter.setOnClickListener { showAddStaffDialog(isRider = false) }
+    }
+
+    /** Shared "add rider / add waiter" dialog — same two fields (name + phone) either way. */
+    private fun showAddStaffDialog(isRider: Boolean) {
+        val dialogBinding = DialogStaffBinding.inflate(LayoutInflater.from(this))
+        AlertDialog.Builder(this)
+            .setTitle(if (isRider) "Add rider" else "Add waiter")
+            .setView(dialogBinding.root)
+            .setPositiveButton("Save") { _, _ ->
+                val name = dialogBinding.etStaffName.text?.toString()?.trim().orEmpty()
+                val phone = dialogBinding.etStaffPhone.text?.toString()?.trim().takeUnless { it.isNullOrBlank() }
+                if (name.isBlank()) {
+                    Toast.makeText(this, "Enter a name", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                lifecycleScope.launch {
+                    if (isRider) repo.riderDao.insert(Rider(name = name, phone = phone))
+                    else repo.waiterDao.insert(Waiter(name = name, phone = phone))
+                }
             }
             .setNegativeButton("Cancel", null)
             .show()

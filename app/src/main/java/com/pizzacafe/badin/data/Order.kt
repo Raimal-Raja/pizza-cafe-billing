@@ -13,7 +13,7 @@ object OrderStatus {
     const val OPEN = "OPEN"          // being built / not yet billed
     const val BILLED = "BILLED"      // bill printed, awaiting payment/completion
     const val COMPLETED = "COMPLETED"
-    const val CANCELLED = "CANCELLED"
+    const val CANCELLED = "CANCELLED" // deleted by staff, kept for audit (see deleteReason)
 }
 
 @Entity(tableName = "orders")
@@ -26,13 +26,20 @@ data class Order(
     var address: String? = null,
     var deliveryZoneId: Long? = null,
     var deliveryCharge: Double = 0.0,
+    var deliveryChargeManual: Boolean = false, // true once staff typed a custom delivery charge
     var subtotal: Double = 0.0,
     var discountAmount: Double = 0.0,  // custom discount applied to this order
     var discountNote: String? = null,  // optional reason/label for the discount
     var total: Double = 0.0,           // subtotal + deliveryCharge - discountAmount
     var status: String = OrderStatus.OPEN,
-    var orderDate: String = "",        // yyyy-MM-dd "day key" this order is recorded under
-    var invoiceNumber: Int = 0,        // resets to 1 at the start of each day
+    var orderDate: String = "",        // yyyy-MM-dd business-day key this order is recorded under
+    var invoiceNumber: Int = 0,        // resets to 1 at the start of each business day
+    var riderId: Long? = null,         // DELIVERY orders — who delivered it
+    var riderName: String? = null,     // snapshot of the rider's name at order time
+    var waiterId: Long? = null,        // DINE_IN / TAKEAWAY — who served it
+    var waiterName: String? = null,    // snapshot of the waiter's name at order time
+    var deleteReason: String? = null,  // set when status becomes CANCELLED via "delete order"
+    var deletedAt: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
     var updatedAt: Long = System.currentTimeMillis()
 )

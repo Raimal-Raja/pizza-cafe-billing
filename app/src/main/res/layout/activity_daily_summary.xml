@@ -12,9 +12,10 @@
         android:layout_height="?attr/actionBarSize"
         android:background="@color/navy"
         android:titleTextColor="@color/gold"
-        android:title="Daily Sales Record"/>
+        android:title="Daily Final Report"/>
 
-    <!-- Day picker: previous / date label (tap to open a calendar) / next -->
+    <!-- Day picker: previous / date label (tap to open a calendar) / next. The shop's
+         business day runs roughly 9 AM to 5 AM the next morning, not midnight-to-midnight. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -59,308 +60,542 @@
             android:textColor="@color/gold"/>
     </LinearLayout>
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/navy_dark"
+        android:text="Business day: 9:00 AM – ~5:00 AM next morning"
+        android:textColor="@color/gold_light"
+        android:textSize="11sp"
+        android:gravity="center"
+        android:paddingBottom="4dp"/>
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabReport"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:tabBackground="@color/navy"
+        app:tabIndicatorColor="@color/gold"
+        app:tabSelectedTextColor="@color/gold"
+        app:tabTextColor="@color/white"
+        app:tabMode="scrollable">
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sales"/>
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Riders"/>
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Expenses"/>
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancelled"/>
+    </com.google.android.material.tabs.TabLayout>
+
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <LinearLayout
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:layout_height="wrap_content">
 
-            <TextView
-                android:id="@+id/tvEmptyState"
+            <!-- ============ SALES TAB ============ -->
+            <LinearLayout
+                android:id="@+id/containerSales"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="No billed orders recorded for this day yet."
-                android:textColor="@color/text_muted"
-                android:textSize="14sp"
-                android:gravity="center"
-                android:padding="24dp"
-                android:visibility="gone"/>
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <!-- Dine-in -->
-            <com.google.android.material.card.MaterialCardView
+                <TextView
+                    android:id="@+id/tvEmptyState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No billed orders recorded for this day yet."
+                    android:textColor="@color/text_muted"
+                    android:textSize="14sp"
+                    android:gravity="center"
+                    android:padding="24dp"
+                    android:visibility="gone"/>
+
+                <!-- Dine-in -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="@color/navy"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Dining Orders"
+                            android:textColor="@color/navy"
+                            android:textStyle="bold"
+                            android:textSize="16sp"/>
+
+                        <TextView
+                            android:id="@+id/tvDineCount"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_muted"
+                            android:textSize="13sp"
+                            android:layout_marginTop="2dp"
+                            android:text="0 orders"/>
+
+                        <TextView
+                            android:id="@+id/tvDineSubtotal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_dark"
+                            android:textSize="14sp"
+                            android:layout_marginTop="6dp"
+                            android:gravity="end"
+                            android:text="Subtotal: Rs. 0"/>
+
+                        <TextView
+                            android:id="@+id/tvDineDiscount"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/cafe_green"
+                            android:textSize="13sp"
+                            android:gravity="end"
+                            android:visibility="gone"
+                            android:text="Discounts: -Rs. 0"/>
+
+                        <TextView
+                            android:id="@+id/tvDineTotal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/cafe_red"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:gravity="end"
+                            android:layout_marginTop="2dp"
+                            android:text="Total: Rs. 0"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Delivery -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="@color/navy"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Delivery Orders"
+                            android:textColor="@color/navy"
+                            android:textStyle="bold"
+                            android:textSize="16sp"/>
+
+                        <TextView
+                            android:id="@+id/tvDeliveryCount"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_muted"
+                            android:textSize="13sp"
+                            android:layout_marginTop="2dp"
+                            android:text="0 orders"/>
+
+                        <TextView
+                            android:id="@+id/tvDeliverySubtotal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_dark"
+                            android:textSize="14sp"
+                            android:layout_marginTop="6dp"
+                            android:gravity="end"
+                            android:text="Subtotal: Rs. 0"/>
+
+                        <TextView
+                            android:id="@+id/tvDeliveryChargeTotal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_dark"
+                            android:textSize="14sp"
+                            android:gravity="end"
+                            android:text="Delivery charges: Rs. 0"/>
+
+                        <TextView
+                            android:id="@+id/tvDeliveryDiscount"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/cafe_green"
+                            android:textSize="13sp"
+                            android:gravity="end"
+                            android:visibility="gone"
+                            android:text="Discounts: -Rs. 0"/>
+
+                        <TextView
+                            android:id="@+id/tvDeliveryTotal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/cafe_red"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:gravity="end"
+                            android:layout_marginTop="2dp"
+                            android:text="Total: Rs. 0"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Takeaway -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="@color/navy"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Takeaway Orders"
+                            android:textColor="@color/navy"
+                            android:textStyle="bold"
+                            android:textSize="16sp"/>
+
+                        <TextView
+                            android:id="@+id/tvTakeawayCount"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_muted"
+                            android:textSize="13sp"
+                            android:layout_marginTop="2dp"
+                            android:text="0 orders"/>
+
+                        <TextView
+                            android:id="@+id/tvTakeawaySubtotal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_dark"
+                            android:textSize="14sp"
+                            android:layout_marginTop="6dp"
+                            android:gravity="end"
+                            android:text="Subtotal: Rs. 0"/>
+
+                        <TextView
+                            android:id="@+id/tvTakeawayDiscount"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/cafe_green"
+                            android:textSize="13sp"
+                            android:gravity="end"
+                            android:visibility="gone"
+                            android:text="Discounts: -Rs. 0"/>
+
+                        <TextView
+                            android:id="@+id/tvTakeawayTotal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/cafe_red"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:gravity="end"
+                            android:layout_marginTop="2dp"
+                            android:text="Total: Rs. 0"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Combined total for the day -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardBackgroundColor="@color/navy"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="3dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="18dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Day's Total — All Order Types"
+                            android:textColor="@color/gold"
+                            android:textStyle="bold"
+                            android:textSize="17sp"/>
+
+                        <TextView
+                            android:id="@+id/tvGrandCount"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/white"
+                            android:textSize="13sp"
+                            android:layout_marginTop="2dp"
+                            android:text="0 orders"/>
+
+                        <TextView
+                            android:id="@+id/tvGrandSubtotal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/white"
+                            android:textSize="14sp"
+                            android:layout_marginTop="8dp"
+                            android:gravity="end"
+                            android:text="Subtotal: Rs. 0"/>
+
+                        <TextView
+                            android:id="@+id/tvGrandDeliveryCharge"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/white"
+                            android:textSize="14sp"
+                            android:gravity="end"
+                            android:text="Delivery charges: Rs. 0"/>
+
+                        <TextView
+                            android:id="@+id/tvGrandDiscount"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/gold_light"
+                            android:textSize="14sp"
+                            android:gravity="end"
+                            android:visibility="gone"
+                            android:text="Discounts: -Rs. 0"/>
+
+                        <TextView
+                            android:id="@+id/tvGrandTotal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/gold"
+                            android:textStyle="bold"
+                            android:textSize="20sp"
+                            android:gravity="end"
+                            android:layout_marginTop="4dp"
+                            android:text="Grand Total: Rs. 0"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Net after buying-cost expenses -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="@color/cafe_green"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="3dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="18dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Net for the Day (Sales − Expenses)"
+                            android:textColor="@color/white"
+                            android:textStyle="bold"
+                            android:textSize="15sp"/>
+
+                        <TextView
+                            android:id="@+id/tvExpensesTotalOnSales"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/white"
+                            android:textSize="14sp"
+                            android:gravity="end"
+                            android:layout_marginTop="6dp"
+                            android:text="Expenses: -Rs. 0"/>
+
+                        <TextView
+                            android:id="@+id/tvNetTotal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/white"
+                            android:textStyle="bold"
+                            android:textSize="20sp"
+                            android:gravity="end"
+                            android:layout_marginTop="4dp"
+                            android:text="Net: Rs. 0"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+            <!-- ============ RIDERS TAB (rider performance slip) ============ -->
+            <LinearLayout
+                android:id="@+id/containerRiders"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:strokeColor="@color/navy"
-                app:strokeWidth="1dp">
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Rider Performance Slip"
+                    android:textColor="@color/navy"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Per rider: orders delivered, total order value (items + delivery), delivery charges, and the net item value."
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="12dp"/>
+
+                <LinearLayout
+                    android:id="@+id/riderListContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"/>
+
+                <TextView
+                    android:id="@+id/tvRidersEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No delivery orders billed for this day yet."
+                    android:textColor="@color/text_muted"
+                    android:textSize="14sp"
+                    android:gravity="center"
+                    android:padding="24dp"
+                    android:visibility="gone"/>
+            </LinearLayout>
+
+            <!-- ============ EXPENSES TAB (buying costs) ============ -->
+            <LinearLayout
+                android:id="@+id/containerExpenses"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="gone">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
 
                     <TextView
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Dining Orders"
+                        android:layout_weight="1"
+                        android:text="Buying Costs (potatoes, tomatoes, bread, spices, oil, cheese, etc.)"
                         android:textColor="@color/navy"
                         android:textStyle="bold"
-                        android:textSize="16sp"/>
+                        android:textSize="15sp"/>
 
-                    <TextView
-                        android:id="@+id/tvDineCount"
-                        android:layout_width="match_parent"
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAddExpense"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/text_muted"
-                        android:textSize="13sp"
-                        android:layout_marginTop="2dp"
-                        android:text="0 orders"/>
-
-                    <TextView
-                        android:id="@+id/tvDineSubtotal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_dark"
-                        android:textSize="14sp"
-                        android:layout_marginTop="6dp"
-                        android:gravity="end"
-                        android:text="Subtotal: Rs. 0"/>
-
-                    <TextView
-                        android:id="@+id/tvDineDiscount"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/cafe_green"
-                        android:textSize="13sp"
-                        android:gravity="end"
-                        android:visibility="gone"
-                        android:text="Discounts: -Rs. 0"/>
-
-                    <TextView
-                        android:id="@+id/tvDineTotal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/cafe_red"
-                        android:textStyle="bold"
-                        android:textSize="16sp"
-                        android:gravity="end"
-                        android:layout_marginTop="2dp"
-                        android:text="Total: Rs. 0"/>
+                        android:text="+ Add"
+                        app:backgroundTint="@color/cafe_red"/>
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Delivery -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:strokeColor="@color/navy"
-                app:strokeWidth="1dp">
 
                 <LinearLayout
+                    android:id="@+id/expenseListContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:orientation="vertical"/>
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Delivery Orders"
-                        android:textColor="@color/navy"
-                        android:textStyle="bold"
-                        android:textSize="16sp"/>
+                <TextView
+                    android:id="@+id/tvExpensesEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No expenses logged for this day yet."
+                    android:textColor="@color/text_muted"
+                    android:textSize="14sp"
+                    android:gravity="center"
+                    android:padding="24dp"
+                    android:visibility="gone"/>
 
-                    <TextView
-                        android:id="@+id/tvDeliveryCount"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_muted"
-                        android:textSize="13sp"
-                        android:layout_marginTop="2dp"
-                        android:text="0 orders"/>
+                <TextView
+                    android:id="@+id/tvExpensesTotal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/cafe_red"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:gravity="end"
+                    android:layout_marginTop="8dp"
+                    android:text="Total expenses: Rs. 0"/>
+            </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/tvDeliverySubtotal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_dark"
-                        android:textSize="14sp"
-                        android:layout_marginTop="6dp"
-                        android:gravity="end"
-                        android:text="Subtotal: Rs. 0"/>
-
-                    <TextView
-                        android:id="@+id/tvDeliveryChargeTotal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_dark"
-                        android:textSize="14sp"
-                        android:gravity="end"
-                        android:text="Delivery charges: Rs. 0"/>
-
-                    <TextView
-                        android:id="@+id/tvDeliveryDiscount"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/cafe_green"
-                        android:textSize="13sp"
-                        android:gravity="end"
-                        android:visibility="gone"
-                        android:text="Discounts: -Rs. 0"/>
-
-                    <TextView
-                        android:id="@+id/tvDeliveryTotal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/cafe_red"
-                        android:textStyle="bold"
-                        android:textSize="16sp"
-                        android:gravity="end"
-                        android:layout_marginTop="2dp"
-                        android:text="Total: Rs. 0"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Takeaway -->
-            <com.google.android.material.card.MaterialCardView
+            <!-- ============ CANCELLED TAB (deleted orders, audit trail) ============ -->
+            <LinearLayout
+                android:id="@+id/containerCancelled"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:strokeColor="@color/navy"
-                app:strokeWidth="1dp">
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="gone">
 
-                <LinearLayout
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Takeaway Orders"
-                        android:textColor="@color/navy"
-                        android:textStyle="bold"
-                        android:textSize="16sp"/>
-
-                    <TextView
-                        android:id="@+id/tvTakeawayCount"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_muted"
-                        android:textSize="13sp"
-                        android:layout_marginTop="2dp"
-                        android:text="0 orders"/>
-
-                    <TextView
-                        android:id="@+id/tvTakeawaySubtotal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_dark"
-                        android:textSize="14sp"
-                        android:layout_marginTop="6dp"
-                        android:gravity="end"
-                        android:text="Subtotal: Rs. 0"/>
-
-                    <TextView
-                        android:id="@+id/tvTakeawayDiscount"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/cafe_green"
-                        android:textSize="13sp"
-                        android:gravity="end"
-                        android:visibility="gone"
-                        android:text="Discounts: -Rs. 0"/>
-
-                    <TextView
-                        android:id="@+id/tvTakeawayTotal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/cafe_red"
-                        android:textStyle="bold"
-                        android:textSize="16sp"
-                        android:gravity="end"
-                        android:layout_marginTop="2dp"
-                        android:text="Total: Rs. 0"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Combined total for the day -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/navy"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="3dp">
+                    android:text="Cancelled / Deleted Orders"
+                    android:textColor="@color/navy"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="12dp"/>
 
                 <LinearLayout
+                    android:id="@+id/cancelledListContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="18dp">
+                    android:orientation="vertical"/>
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Day's Total — All Order Types"
-                        android:textColor="@color/gold"
-                        android:textStyle="bold"
-                        android:textSize="17sp"/>
+                <TextView
+                    android:id="@+id/tvCancelledEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No cancelled orders for this day."
+                    android:textColor="@color/text_muted"
+                    android:textSize="14sp"
+                    android:gravity="center"
+                    android:padding="24dp"
+                    android:visibility="gone"/>
+            </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/tvGrandCount"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/white"
-                        android:textSize="13sp"
-                        android:layout_marginTop="2dp"
-                        android:text="0 orders"/>
-
-                    <TextView
-                        android:id="@+id/tvGrandSubtotal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/white"
-                        android:textSize="14sp"
-                        android:layout_marginTop="8dp"
-                        android:gravity="end"
-                        android:text="Subtotal: Rs. 0"/>
-
-                    <TextView
-                        android:id="@+id/tvGrandDeliveryCharge"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/white"
-                        android:textSize="14sp"
-                        android:gravity="end"
-                        android:text="Delivery charges: Rs. 0"/>
-
-                    <TextView
-                        android:id="@+id/tvGrandDiscount"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/gold_light"
-                        android:textSize="14sp"
-                        android:gravity="end"
-                        android:visibility="gone"
-                        android:text="Discounts: -Rs. 0"/>
-
-                    <TextView
-                        android:id="@+id/tvGrandTotal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/gold"
-                        android:textStyle="bold"
-                        android:textSize="20sp"
-                        android:gravity="end"
-                        android:layout_marginTop="4dp"
-                        android:text="Grand Total: Rs. 0"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-        </LinearLayout>
+        </FrameLayout>
     </androidx.core.widget.NestedScrollView>
 </LinearLayout>
