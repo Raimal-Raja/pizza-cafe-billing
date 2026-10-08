@@ -92,3 +92,41 @@ To fix it:
 If the issue is only that the README shows as modified but not pushed, make sure
 there are no unmerged conflict markers left and that you are pushing to the
 correct branch.
+
+---
+
+## Repository guide
+
+### Contents
+
+- [LICENSE](LICENSE)
+- [README.md](README.md)
+- [app](app)
+- [build.gradle](build.gradle)
+- [gradle.properties](gradle.properties)
+- [settings.gradle](settings.gradle)
+
+### Getting started
+
+```bash
+git clone https://github.com/Raimal-Raja/pizza-cafe-billing.git
+cd pizza-cafe-billing
+```
+
+Open the project in Android Studio and configure its required Android SDK. This repository has Gradle build files; no tracked Gradle wrapper was found.
+
+### Configuration and limitations
+
+An Android SDK and Gradle environment are needed for build verification. They are unavailable in this review environment.
+
+### Validation
+
+Reviewed on 2026-10-08. Repository structure and documentation were reviewed. No application runtime, training job, or platform-specific build was executed.
+
+### Contributions
+
+Describe the issue, reproduction steps, environment, and expected behavior when proposing a change. Keep generated environments, credentials, and unnecessary build artifacts out of new commits.
+
+### License
+
+See [LICENSE](LICENSE) for the repository’s licensing terms.
