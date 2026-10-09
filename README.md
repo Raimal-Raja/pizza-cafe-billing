@@ -120,11 +120,7 @@ An Android SDK and Gradle environment are needed for build verification. They ar
 
 ### Validation
 
-Audit: 2026-10-08. Repository structure, setup instructions and description were reviewed. The existing Android build run 37762438712 succeeded. No Android SDK build was repeated locally. Syntax checks do not establish full runtime correctness. External APIs, live scraping, GUI interaction, notebook training and production deployment were not comprehensively exercised.
-
-### Repository description
-
-The short GitHub description is provided in [REPOSITORY_DESCRIPTION.md](REPOSITORY_DESCRIPTION.md).
+Recorded checks from the previous maintenance review (2026-10-08): The existing Android build run 37762438712 succeeded. No Android SDK build was repeated locally. Syntax checks do not establish full runtime correctness. External APIs, live scraping, GUI interaction, notebook training and production deployment were not comprehensively exercised.
 
 ### Contributions
 
