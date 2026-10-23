@@ -1,4 +1,51 @@
-# Pizza Cafe Billing — Android App (Offline)
+# Pizza Cafe Billing — Offline Android App
+
+Offline Android restaurant-billing project with Kotlin application code, local storage, menu management, and order workflows.
+
+## Project focus
+
+Application / engineering project. The sections below separate the runnable entry point, source layout, prerequisites, and verification path.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    A["Android billing UI"] --> B["Menu and order workflow"]
+    B --> C{"Order action"}
+    C --> D["Cart and bill calculation"]
+    C --> E["Stored order lookup"]
+    D --> F["Room / SQLite"]
+    E --> F
+    F --> A
+```
+
+## Repository structure
+
+| Path | Purpose |
+| --- | --- |
+| [`.github/`](.github) | Repository automation and workflows. |
+| [`LICENSE`](LICENSE) | Repository licensing terms. |
+| [`app/`](app) | Application source; inspect this directory for the framework-specific implementation. |
+| [`build.gradle`](build.gradle) | Project-specific source, resources, or learning material. |
+| [`gradle.properties`](gradle.properties) | Project-specific source, resources, or learning material. |
+| [`settings.gradle`](settings.gradle) | Project-specific source, resources, or learning material. |
+
+## Getting started
+
+```bash
+git clone https://github.com/Raimal-Raja/pizza-cafe-billing.git
+cd pizza-cafe-billing
+```
+
+Open this repository in Android Studio and let Gradle resolve the versions declared in the project. Select an Android emulator or connected device and build the app module.
+
+The repository contains `build.gradle` and `settings.gradle`; use your configured Gradle installation or Android Studio when a Gradle wrapper is absent. See the retained project guide for app workflows and supported device requirements.
+
+## Verification
+
+Use the setup commands and inspect the selected interface, example, or notebook with known inputs. This documentation review checks repository paths and dependency declarations; it does not claim fresh end-to-end execution or model-quality measurements.
+
+## Detailed project guide
 
 A native Android app (Kotlin) for a single-till restaurant billing system,
 pre-loaded with the Pizza Cafe (Badin) menu. Works fully offline — all data
@@ -95,37 +142,10 @@ correct branch.
 
 ---
 
-## Setup and repository reference
+## Contributing
 
-### Project structure
+Include reproduction steps, the affected path, expected behavior, and the checks you ran. Keep credentials, generated environments, and unnecessary build artifacts out of commits.
 
-- [LICENSE](LICENSE)
-- [app](app)
-- [build.gradle](build.gradle)
-- [gradle.properties](gradle.properties)
-- [settings.gradle](settings.gradle)
+## License
 
-### Getting started
-
-```bash
-git clone https://github.com/Raimal-Raja/pizza-cafe-billing.git
-cd pizza-cafe-billing
-```
-
-Open the project in Android Studio and configure its required Android SDK. This repository has Gradle build files; no tracked Gradle wrapper was found.
-
-### Configuration and limitations
-
-An Android SDK and Gradle environment are needed for build verification. They are unavailable in this review environment.
-
-### Validation
-
-Recorded checks from the previous maintenance review (2026-10-08): The existing Android build run 37762438712 succeeded. No Android SDK build was repeated locally. Syntax checks do not establish full runtime correctness. External APIs, live scraping, GUI interaction, notebook training and production deployment were not comprehensively exercised.
-
-### Contributions
-
-Describe the issue, reproduction steps, environment, and expected behavior when proposing a change. Keep generated environments, credentials, and unnecessary build artifacts out of new commits.
-
-### License
-
-See [LICENSE](LICENSE) for the repository’s licensing terms.
+See [LICENSE](LICENSE) for the repository's license.
